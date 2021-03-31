@@ -44,6 +44,10 @@ class Panel extends JPanel implements MouseMotionListener
 {
 	private final int SIZE_MULTIPLIER = 5;
 	
+	private final String 
+			START = "Start", 
+			END = "A909"; 
+	
 	BufferedImage outline; 
 	
 	Node graph; 
@@ -55,6 +59,8 @@ class Panel extends JPanel implements MouseMotionListener
 	int mouseX, mouseY; 
 	
 	int hallwayX, hallwayY; 
+	
+	HashMap<String, Integer> roomNames; 
 	
 	public Panel()
 	{
@@ -71,8 +77,15 @@ class Panel extends JPanel implements MouseMotionListener
 		setPreferredSize(new Dimension(outline.getWidth() * SIZE_MULTIPLIER, outline.getHeight() * SIZE_MULTIPLIER));
 		addMouseMotionListener(this); 
 		
+		roomNames = new HashMap<>(); 
 		graph = createGraph(); 
-		// pathfind(STARTING_POS, ENDING_POS); 
+		
+		pathfind(roomNames.get(END)); 
+		
+		mouseX = -1; 
+		mouseY = -1; 
+		hallwayX = -1; 
+		hallwayY = -1; 
 	}
 	
 	public void paint(Graphics g)
@@ -96,8 +109,13 @@ class Panel extends JPanel implements MouseMotionListener
 				current = node; 
 			}
 			
-			gr.drawLine((int)hallwayX * SIZE_MULTIPLIER, (int)hallwayY * SIZE_MULTIPLIER, (int)current.x * SIZE_MULTIPLIER, (int)current.y * SIZE_MULTIPLIER); 
-			gr.drawLine(mouseX, mouseY, hallwayX * SIZE_MULTIPLIER, hallwayY * SIZE_MULTIPLIER); 
+			// If this is -1, that means the user hasn't clicked yet, or we're using a 
+			// predefined path. 
+			if (mouseX != -1)
+			{
+				gr.drawLine((int)hallwayX * SIZE_MULTIPLIER, (int)hallwayY * SIZE_MULTIPLIER, (int)current.x * SIZE_MULTIPLIER, (int)current.y * SIZE_MULTIPLIER); 
+				gr.drawLine(mouseX, mouseY, hallwayX * SIZE_MULTIPLIER, hallwayY * SIZE_MULTIPLIER); 
+			}
 		}
 	}
 	
@@ -115,7 +133,28 @@ class Panel extends JPanel implements MouseMotionListener
 			for (int index = 0; index < nodes.length; index++)
 			{
 				Scanner scanner = new Scanner(line); 
-				nodes[index] = new Node(scanner.nextInt(), scanner.nextDouble(), scanner.nextDouble());
+				int key = scanner.nextInt();
+				String text = ""; 
+				String val = scanner.next();
+				double x = -1, y = -1; 
+				try 
+				{
+					x = Double.parseDouble(val); 
+					y = scanner.nextDouble(); 
+				}
+				catch (NumberFormatException ex)
+				{
+					// We detected a room name instead of an x val. 
+					text = val; 
+					x = scanner.nextDouble();
+					y = scanner.nextDouble(); 
+					
+					roomNames.put(text, key); 
+				}
+				nodes[index] = new Node(key, text, x, y);
+				
+				
+				
 				scanner.close();
 				
 				line = reader.readLine(); 
@@ -248,10 +287,17 @@ class Node
 	LinkedList<Node> connectors; 
 	int key; 
 	double x, y; 
+	String text;
 	
-	Node(int key, double x, double y) 
+	Node(int key, double x, double y)
+	{
+		this(key, "", x, y); 
+	}
+	
+	Node(int key, String text, double x, double y) 
 	{
 		this.key = key;
+		this.text = text; 
 		this.x = x; 
 		this.y = y; 
 		connectors = new LinkedList<Node>();
